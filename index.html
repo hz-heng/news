@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>柱状图</title>
+    <!-- 引入 G2 文件 -->
+    <script src="https://a.alipayobjects.com/g/datavis/g2/2.2.1/g2.js"></script>
+    <script src="https://cdn.bootcss.com/jquery/3.2.1/jquery.min.js"></script>
+  </head>
+  <body>
+    <!-- 创建图表容器 -->
+    <div id="c1"></div>
+    <script>
+      var url = "http://119.29.41.137:8081/api/newscrawl/2017-08-07"
+      $.getJSON(url, function(data){
+        var chart = new G2.Chart({
+          id: 'c1', // 指定图表容器 ID
+          forceFit: true, // 自适应
+          height : 400 // 指定图表高度
+        });
+       // Step 2: 载入数据源
+        chart.source(data, {
+          date: {
+           alias: '日期', // 列定义，定义该属性显示的别名
+           range: [0, 1]
+          },
+          num: {
+           alias: '数量'
+          }
+        });
+        // 指定绘制的图形、位置
+        chart.line().position('date*num').size(2)
+        // Step 4: 渲染图表
+        chart.render();
+      })
+    </script>
+  </body>
+</html>
