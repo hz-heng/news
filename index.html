@@ -2,37 +2,160 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>柱状图</title>
-    <!-- 引入 G2 文件 -->
-    <script src="https://a.alipayobjects.com/g/datavis/g2/2.2.1/g2.js"></script>
+    <title>NewsCloud</title>
     <script src="https://cdn.bootcss.com/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://gw.alipayobjects.com/as/g/datavis/g2/2.3.9/index.js"></script>
+    <link href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
   </head>
   <body>
-    <!-- 创建图表容器 -->
-    <div id="c1"></div>
+    <div id="main">
+      <div id="c1"></div>
+      <div id="tool" style="display:flex;flex-direction:row;">
+        <div id="left" style="display:flex;justify-content:center;flex:1;cursor: pointer;">
+          <i class="fa fa-chevron-left fa-2x" aria-hidden="true"></i>
+        </div>
+        <div style="display:flex;justify-content:center;flex:10;">
+          <span id="date" style="font-size:24px;font-weight:bold;"></span>
+        </div>
+        <div id="right" style="display:flex;justify-content:center;flex:1;cursor: not-allowed;">
+          <i class="fa fa-chevron-right fa-2x" aria-hidden="true"></i>
+        </div>
+      </div>
+    </div>
+    <script src="https://a.alipayobjects.com/g/datavis/g-cloud/1.0.2/index.js"></script>
     <script>
-      var url = "https://119.29.41.137:8081/api/newscrawl/2017-08-07"
-      $.getJSON(url, function(data){
-        var chart = new G2.Chart({
-          id: 'c1', // 指定图表容器 ID
-          forceFit: true, // 自适应
-          height : 400 // 指定图表高度
-        });
-       // Step 2: 载入数据源
-        chart.source(data, {
-          date: {
-           alias: '日期', // 列定义，定义该属性显示的别名
-           range: [0, 1]
-          },
-          num: {
-           alias: '数量'
+      function drawCloud(date) {
+        G2.track(false); //关闭打点监控
+        var Util = G2.Util;
+        var Shape = G2.Shape;
+        var _height = $(window).height()*0.9;
+      
+        function getTextAttrs(cfg) {
+          var textAttrs = Util.mix(true, {}, {
+            fillOpacity: cfg.opacity,
+            fontSize: cfg.size,
+            rotate: cfg.origin._origin.rotate,
+            text: cfg.origin._origin.text,
+            textAlign: 'center',
+            fill: cfg.color,
+            textBaseline:'Alphabetic'
+          }, cfg.style);
+          return textAttrs;
+        }
+
+        Shape.registShape('point', 'cloud', {
+          drawShape: function(cfg, container) {
+          cfg.points = this.parsePoints(cfg.points);
+          var attrs = getTextAttrs(cfg);
+          var shape = container.addShape('text', {
+            attrs: Util.mix(attrs, {
+              x: cfg.points[0].x,
+              y: cfg.points[0].y
+            })
+          });
+          return shape;
           }
         });
-        // 指定绘制的图形、位置
-        chart.line().position('date*num').size(2)
-        // Step 4: 渲染图表
-        chart.render();
-      })
+
+        var url = 'https://119.29.41.137:8081/api/newscrawl/' + date;
+        $.getJSON(url, function(data) {
+          data.sort(function(a,b){
+            return b.WEIGHT-a.WEIGHT;
+          });
+          var max = data[0].WEIGHT;
+          var min = data[data.length-1].WEIGHT;
+          var layout = new Cloud({
+            words: data,
+            height: _height,
+            padding: 0,
+            size: function(words){
+              // 将WEIGHT映射到canvas可绘制的size范围14-84(canvas默认最小文字为12px)
+              return ((words.WEIGHT - min)/(max - min)) * (50 - 5) + 5;
+            },
+            text: function(words){
+              return words.WORD;
+            }
+          });
+          layout.exec(function(texts){
+            var chart = new G2.Chart({
+              id : 'c1',
+              forceFit: true,
+              height: _height,
+              plotCfg : {
+                margin : 0
+              }
+            });
+            chart.legend(false);
+            chart.source(texts);
+            chart.axis(false);
+            chart.tooltip({
+              title:false
+            });
+            chart.coord().reflect();
+            chart.point().position('x*y').color('text').size('size',function(size){
+              return size;
+            }).shape('cloud').style({
+              fontStyle: texts[0].style,
+              fontFamily: texts[0].font,
+              fontWeight: texts[0].weight
+            }).tooltip('WORD*WEIGHT');
+            chart.render();
+          });
+        });
+      }
+      
+      function p(s) {
+        return s < 10 ? '0' + s: s;
+      }
+      function dateformat(d) {
+        var year = d.getFullYear();
+        var month = d.getMonth()+1;
+        var date = d.getDate();
+        return year+'-'+p(month)+'-'+p(date);
+      }
+      function checkdate(d1,d2) {
+        var d3 = "2017-01-01";
+        if(d1==d2){
+          $('#right').css('cursor','not-allowed');
+        }else if(d1==d3) {
+          $('#left').css('cursor','not-allowed');
+        }else{
+          $('#right').css('cursor','pointer');
+          $('#left').css('cursor','pointer');
+        }
+      }
+      
+      var defDate = new Date();
+      var today = dateformat(defDate);
+      
+      //初始化
+      $(document).ready(function(){
+        drawCloud(today);
+        $('#date').html(today);
+        checkdate(today,today);
+      });
+      //前一天
+      $('#left').click(function(){
+        if($(this).css('cursor')=="pointer") {
+          defDate.setDate(defDate.getDate() - 1);
+          var beforedate = dateformat(defDate);
+          $('#c1').empty();
+          drawCloud(beforedate);
+          $('#date').html(beforedate);
+          checkdate(beforedate,today);
+        }
+      });
+      //后一天
+      $('#right').click(function(){
+        if($(this).css('cursor')=="pointer") {
+          defDate.setDate(defDate.getDate() + 1);
+          var afterdate = dateformat(defDate);
+          $('#c1').empty();
+          drawCloud(afterdate);
+          $('#date').html(afterdate);
+          checkdate(afterdate,today);
+        }
+      });
     </script>
   </body>
 </html>
