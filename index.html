@@ -60,7 +60,7 @@
           }
         });
 
-        var url = 'https://119.29.41.137:8081/api/newscrawl/' + date;
+        var url = 'https://119.29.41.137:8081/api/newscrawl_v1/' + date;
         $.getJSON(url, function(data) {
           data.sort(function(a,b){
             return b.WEIGHT-a.WEIGHT;
