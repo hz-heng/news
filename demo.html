@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Demo</title>
+    <script src="https://a.alipayobjects.com/jquery/jquery/1.11.1/jquery.js"></script>
+    <script src="https://gw.alipayobjects.com/as/g/datavis/g2/2.3.12/index.js"></script>
+  </head>
+  <body>
+    <div id="c1"></div>
+    <script src="https://a.alipayobjects.com/g/datavis/g-cloud/1.0.2/index.js"></script>
+    <script>
+      var Util = G2.Util;
+      var Shape = G2.Shape;
+      function getTextAttrs(cfg) {
+        var textAttrs = Util.mix(true, {}, {
+          fillOpacity: cfg.opacity,
+          fontSize: cfg.size,
+          rotate: cfg.origin._origin.rotate,
+          text: cfg.origin._origin.text,
+          textAlign: 'center',
+          fill: cfg.color,
+          textBaseline:'Alphabetic'
+        }, cfg.style);
+        return textAttrs;
+      }
+      // 给point注册一个词云的shape
+      Shape.registShape('point', 'cloud', {
+        drawShape: function(cfg, container) {
+          cfg.points = this.parsePoints(cfg.points);
+          var attrs = getTextAttrs(cfg);
+          // 给容器添加text类型的shape
+          // 坐标仍然是原来的坐标
+          // 文字样式为通过getTextAttrs方法获取的样式
+          var shape = container.addShape('text', {
+            attrs: Util.mix(attrs, {
+              x: cfg.points[0].x,
+              y: cfg.points[0].y
+            })
+          });
+          return shape;
+        }
+      });
+      var data = [
+        {"site":"125.88.160.114","pv":14},
+        {"site":"140.205.137.163","pv":8},
+        {"site":"192.168.31.247","pv":17},
+        {"site":"suso56.welogix.cn","pv":6},
+        {"site":"fengdie-dev.alipay.net","pv":25},
+        {"site":"cssyz.weixiaobang.cn","pv":5},
+        {"site":"adart.test.alipay.net","pv":19},
+        {"site":"gxwk.welogix.cn","pv":10}
+      ]
+      data.sort(function(a,b){
+        return b.pv-a.pv;
+      });
+      var max = data[0].pv;
+      var min = data[data.length-1].pv;
+      var layout = new Cloud({
+        words: data,
+        width: 650,
+        height: 450,
+        size: function(words){
+          return ((words.pv - min)/(max - min)) * (100 - 14) + 14;
+        },
+        text: function(words){
+          var index = words.site.indexOf('.');
+          var text = words.site;
+          if(index > 0 && index < words.site.length){
+            text = words.site.substr(0,index);
+            if(text === 'www'){
+              text = words.site.substr(index + 1);
+              index = text.indexOf('.');
+              text = text.substr(0,index);
+            }
+            if(/^[0-9]*$/g.test(text)) {
+              text = words.site;
+            }
+          }
+          return text;
+        }
+      });
+      layout.exec(function(texts){
+        var chart = new G2.Chart({
+          id : 'c1',
+          width: 650,
+          height: 450,
+          plotCfg : {
+            margin : 0
+          }
+        });
+        chart.legend(false);
+        chart.source(texts);
+        chart.axis(false);
+        chart.tooltip({
+          title:false
+        });
+        chart.coord().reflect();
+        chart.point().position('x*y').color('text').size('size',function(size){
+          return size;
+        }).shape('cloud').style({
+          fontStyle: texts[0].style,
+          fontFamily: texts[0].font,
+          fontWeight: texts[0].weight
+        }).tooltip('site*pv');
+        chart.render();
+      });
+    </script>
+  </body>
+</html>
