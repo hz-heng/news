@@ -11,4 +11,4 @@
 - 使用jqcloud.js生成词云
 - 可以使用手机浏览
 - 数据为整份电子报取250个关键字
-![screenshot_2](https://github.com/hz-heng/news/blob/master/Screenshots/screenshot_2.png)
+![screenshot_2](https://github.com/hz-heng/news/blob/master/Screenshots/screenshot_2.jpg)
