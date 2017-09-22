@@ -30,7 +30,7 @@
       function drawCloud(date) {
         var _height = $(window).height()*0.9;
         var _width = $(window).width()*0.9;
-        var url = 'https://119.29.41.137:8081/api/newscrawl_v2/' + date;
+        var url = 'http://119.29.41.137:8081/api/newscrawl_v2/' + date;
         $.getJSON(url, function(data){
           $(function() {
             $("#c1").jQCloud(data,{
